@@ -1,6 +1,7 @@
 #ifndef REPOSITORY_H
 #define REPOSITORY_H
 
+#include <sstream>
 #include "../commit/commit.h"
 
 class Repository
@@ -23,10 +24,10 @@ public:
     void reset(string commit_id);
     void merge(string branch_name);
 private:
-    fs::path master;    // head of master branch
-    fs::path head;      // head of current branch
-    string sha1(fs::path file);
-    void serialize(fs::path source, fs::path dest);
+    fs::path _master;    // head of master branch
+    fs::path _head;      // head of current branch
+    // PURPOSE: return if file is equal to file in current commit
+    bool in_commit(fs::path file);
 };
 
 #endif // REPOSITORY_H

@@ -1,1 +1,1 @@
-g++ -std=gnu++11 -o gitlet main.cpp -std=c++17 repository/repository.cpp constants/constants.cpp
+g++ -std=gnu++11 -o gitlet main.cpp -std=c++17 repository/repository.cpp globals/globals.cpp commit/commit.cpp sha1/sha1.cpp

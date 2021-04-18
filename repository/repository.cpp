@@ -5,39 +5,70 @@ Repository::Repository(){}
 void Repository::init()
 {
     // if .gitlet folder already exists
-    // if (fs::exists(REPO_DIR))
-    // {
-    //     cout << "A Gitlet version-control system already exists in the current directory.";
-    // }
-    // else
+    if (fs::exists(REPO_DIR))
     {
-        // create .gitlet folder structure
-        // create_directory(repo_dir);
-        // create_directory(repo_dir / "stage");
-        // create commits folder
-        // create blobs folder
+        cout << "A Gitlet version-control system already exists in the current directory.\n";
+    }
+    else
+    {
+        create_directory(REPO_DIR);
+        create_directory(STAGE_DIR);
+        create_directory(ADD_STAGE_DIR);
+        create_directory(RM_STAGE_DIR);
+        create_directory(COMMITS_DIR);
+        create_directory(MASTER_DIR);
+        create_directory(BLOBS_DIR);
 
-        // within commits, create master folder
-        // create initial commit
-            // timestamp: 00:00:00 UTC, Thursday, 1 January 1970
-        // serialize initial commit into a file 
-        // hash file into filename - name it from AFTER first two chars to end
-        // store in subfolder in master, where subfolder is named as first two chars
-        
-        // create HEAD and head
+        Commit commit;
+        fs::path file_path = store(commit, MASTER_DIR);
+
+        // assign heads
+        _master = file_path;
+        _head = file_path;
+        // serialize master
+        {
+            ofstream os(MASTER_PATH, ios::binary);
+            cereal::BinaryOutputArchive oarchive(os);
+            oarchive(_master);
+        }
+        // serialize head
+        {
+            ofstream os(HEAD_PATH, ios::binary);
+            cereal::BinaryOutputArchive oarchive(os);
+            oarchive(_head);
+        }
     }
 }
 
 void Repository::add(fs::path file)
 {
-    // if file doesn't exist, print "File does not exist."
-    // filepath: file
-    // blob: blobpath
-        // SHA1 hash the file to get subfolder + filename, which will be in BLOBS
-        // check if SHA1 hash is equal to current commit for its respective filename (NEED TO READ COMMIT FROM HEAD) 
-            // do not stage, or remove it from either the add or rm stage if it is there.
-        // serialize contents of file into path found above
-        // blob: path to the serialized file
+    fs::path abs_path = CWD / file;
+
+    // if file doesn't exist
+    if (!fs::exists(abs_path))
+    {
+        cout << "File does not exist.\n";
+    }
+    else
+    {
+        // check if file is equal to file in current commit
+        if (in_commit(file))
+        {
+            // if file is in add or rm stage, remove it
+            if (fs::exists(ADD_STAGE_DIR / file)) fs::remove(ADD_STAGE_DIR / file);
+            if (fs::exists(RM_STAGE_DIR / file)) fs::remove(RM_STAGE_DIR / file);
+        }
+        else
+        {
+            // store contents of file in blob
+            fs::path blob_path = store(abs_path, BLOBS_DIR);
+            // create file in add stage
+            ofstream staged_file(ADD_STAGE_DIR / file, ios::binary);
+            // store blob_path in staged_file
+            cereal::BinaryOutputArchive oarchive(staged_file);
+            oarchive(blob_path);
+        }
+    }
 }
 
 void Repository::commit(string message)
@@ -201,4 +232,22 @@ void Repository::reset(string commit_id)
 void Repository::merge(string branch_name)
 {
     // see spec
+}
+
+// PURPOSE: return if file is equal to file in current commit
+bool Repository::in_commit(fs::path file)
+{
+    fs::path abs_path = CWD / file;
+    // get hash of current file
+    string h1 = get_hash(abs_path);
+    // get hash of commit's file
+    Commit commit;
+    fs::path commit_file;
+    retrieve(HEAD_PATH, commit_file);
+    retrieve(commit_file, commit);
+    fs::path blob_path = commit.get_value(file);
+    string h2 = blob_path.parent_path().filename().string();
+    h2 += blob_path.filename().string();
+    // return comparison
+    return h1 == h2;
 }
