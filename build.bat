@@ -1,0 +1,1 @@
+g++ -std=gnu++11 -o gitlet main.cpp -std=c++17 repository/repository.cpp constants/constants.cpp
