@@ -15,7 +15,6 @@ Commit::Commit(const Commit& c, fs::path parent_path, string message)
     _blobs = c._blobs;
     _timestamp = time(0);
     _parent = parent_path;
-    _uid = c._uid; // TODO: make sure this is updated....
 }
 
 fs::path Commit::get_value(fs::path key)
@@ -48,11 +47,17 @@ bool Commit::tracks(fs::path file)
     return num != 0;
 }
 
+// PURPOSE: get path to parent commit
+fs::path Commit::parent_path()
+{
+    return _parent;
+}
+
 ostream& operator<<(ostream& outs, const Commit c)
 {
     outs << "===\ncommit " << c._uid << endl;
     outs << "Date: " << ctime(&c._timestamp);
-    outs << c._message << endl;
+    outs << c._message << endl << endl;
     // for (auto const &pair: c._blobs)
     //     std::cout << "{" << pair.first << ": " << pair.second << "}\n";
     return outs;

@@ -24,6 +24,8 @@ public:
     void set_uid(string uid);
     // PURPOSE: return if tracks file
     bool tracks(fs::path file);
+    // PURPOSE: get parent commit's path
+    fs::path parent_path();
     // PURPOSE: print commit
     friend ostream& operator<<(ostream& outs, const Commit c);
     // PURPOSE: for serialization

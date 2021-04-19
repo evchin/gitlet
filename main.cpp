@@ -27,15 +27,15 @@ int main(int argc, char *argv[])
         if (argc < 3) cout << "Please enter a file to remove.\n";
         else for (int i = 2; i < argc; i++) repo.rm(argv[i]);
     }
-    
     else if (strcmp(argv[1], "log") == 0)
     {
-        cout << "Running log." << endl;
+        repo.log();
     }
     else if (strcmp(argv[1], "global-log") == 0)
     {
-        cout << "Running global log." << endl;
+        repo.global_log();
     }
+
     else if (strcmp(argv[1], "status") == 0)
     {
         cout << "Running status." << endl;

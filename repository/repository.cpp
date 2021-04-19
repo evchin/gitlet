@@ -19,6 +19,7 @@ void Repository::init()
         create_directory(COMMITS_DIR / MASTER_BRANCH);
         create_directory(BLOBS_DIR);
 
+        // create initial commit
         Commit commit;
         fs::path file_path = store(commit, COMMITS_DIR / MASTER_BRANCH);
 
@@ -138,34 +139,43 @@ void Repository::rm(fs::path file)
 
 void Repository::log()
 {
-    // Starting at the current head commit, 
-        // display information about each commit backwards along the commit tree until the initial commit, 
-        // following the first parent commit links, ignoring any second parents found in merge commits.
-    // ===
-    // commit a0da1ea5a15ab613bf9961fd86f010cf74c7ee48
-    // Date: Thu Nov 9 20:00:05 2017 -0800
-    // A commit message.
+    // TODO: ignoring any second parents found in merge commits
+    
+    // get current commit
+    fs::path commit_path;
+    Commit head = get_current_commit(commit_path);
+    cout << head;
 
-    // ===
-    // commit 3e8bf1d794ca2e9ef8a4007275acf3751c7170ff
-    // Date: Thu Nov 9 17:01:33 2017 -0800
-    // Another commit message.
+    // display each commit until the initial commit 
+    while (fs::exists(head.parent_path()))
+    {
+        retrieve(head.parent_path(), head);
+        cout << head;
+    }
 
-    // Merge commits?
+    // TODO: Merge commits?
     // ===
     // commit 3e8bf1d794ca2e9ef8a4007275acf3751c7170ff
     // Merge: 4975af1 2c1ead1
     // Date: Sat Nov 11 12:30:00 2017 -0800
     // Merged development into master.
-    
     // the two hexadecimal numerals following “Merge:” consist of the first seven digits of the first and second parents’ commit ids, in that order. 
-    // The first parent is the branch you were on when you did the merge; the second is that of the merged-in branch. 
 }
 
 void Repository::global_log()
 {
-    // Like log, except displays information about all commits ever made. 
-    // The order of the commits does not matter. 
+    for (const fs::path& folder : fs::recursive_directory_iterator(COMMITS_DIR))
+    {
+        for (const fs::path& subfolder : fs::recursive_directory_iterator(folder))
+        {
+            for (const fs::path& file : fs::recursive_directory_iterator(subfolder))
+            {
+                Commit c;
+                retrieve(file, c);
+                cout << c;
+            }
+        }
+    }
 }
 
 void Repository::find(string message)
