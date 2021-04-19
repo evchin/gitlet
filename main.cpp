@@ -1,5 +1,7 @@
 #include "repository/repository.h"
 
+// TODO: FIX COMMANDS??
+
 int main(int argc, char *argv[])
 {   
     Repository repo;
@@ -50,16 +52,35 @@ int main(int argc, char *argv[])
         if (argc != 3) cout << "Please enter a branch to remove.\n";
         else repo.rm_branch(argv[2]);
     }
+    else if (strcmp(argv[1], "checkout") == 0)
+    {
+        if (argc == 3) 
+        {
+            string branch = argv[2];
+            repo.checkout(branch);
+        }
+        else if (argc == 4)
+        {
+            fs::path path = argv[3];
+            repo.checkout(path);
+        }
+        else if (argc == 5) 
+        {
+            repo.checkout(argv[2], argv[4]);
+        }
+        else
+        {
+            cout << "Invalid argument." << endl;
+        }
+    }
+
 
 
     else if (strcmp(argv[1], "status") == 0)
     {
         cout << "Running status." << endl;
     }
-    else if (strcmp(argv[1], "checkout") == 0)
-    {
-        cout << "Running status." << endl;
-    }
+    
     else if (strcmp(argv[1], "reset") == 0)
     {
         cout << "Running status." << endl;

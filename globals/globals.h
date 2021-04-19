@@ -5,6 +5,7 @@
 #include "../overloads/overloads.h"
 #include "../sha1/sha1.h"
 #include "../cereal/archives/binary.hpp"
+#include "../cereal/types/string.hpp"
 using namespace std;
 namespace fs = std::filesystem;
 
@@ -23,6 +24,7 @@ extern string MASTER_BRANCH;
 
 string get_hash(fs::path file);
 string get_hash(string data);
+fs::path store_file(fs::path filepath, fs::path folder);
 
 // PURPOSE: stores serialized object in a subfolder/file system within folder
 // RETURNS: file path
@@ -43,18 +45,6 @@ fs::path store(T obj, fs::path folder)
     file << ss.str();
     
     return file_path;
-}
-
-// PURPOSE: stores serialized file in a subfolder/file system within folder
-// RETURNS: file path
-template <typename T>
-fs::path store(fs::path filepath, fs::path folder)
-{
-    // read in file
-    ifstream file_stream(filepath);
-    stringstream buffer;
-    buffer << file_stream.rdbuf();
-    return store(buffer.str(), folder);
 }
 
 // PURPOSE: stores object directly in file

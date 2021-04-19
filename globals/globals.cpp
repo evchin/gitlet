@@ -30,3 +30,14 @@ string get_hash(string data)
 {
     return sha1(data);
 }
+
+// PURPOSE: stores serialized file in a subfolder/file system within folder
+// RETURNS: file path
+fs::path store_file(fs::path filepath, fs::path folder)
+{
+    // read in file
+    ifstream file_stream(filepath);
+    stringstream buffer;
+    buffer << file_stream.rdbuf();
+    return store(buffer.str(), folder);
+}

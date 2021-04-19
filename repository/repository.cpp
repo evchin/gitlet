@@ -1,5 +1,7 @@
 #include "repository.h"
 
+// TODO: remember to close all streams...
+
 Repository::Repository(){}
 
 void Repository::init()
@@ -55,7 +57,7 @@ void Repository::add(fs::path file)
         else
         {
             // store contents of file in blob
-            fs::path blob_path = store(abs_path, BLOBS_DIR);
+            fs::path blob_path = store_file(abs_path, BLOBS_DIR);
             store_in_file(blob_path, ADD_STAGE_DIR / file);
         }
     }
@@ -220,14 +222,32 @@ void Repository::rm_branch(string name)
 
 void Repository::checkout(fs::path file)
 {
-    // Takes the version of the file as it exists in the head commit and puts it in the working directory, 
-    // overwriting the version of the file that’s already there if there is one. 
-    // The new version of the file is not staged.
-    // If the file does not exist in the previous commit, abort, printing the error message File does not exist in that commit. Do not change the CWD.
+    fs::path abs_path = CWD / file;
+    fs::path commit_path;
+    Commit current = get_current_commit(commit_path);
+
+    if (!current.tracks(file))
+    {
+        cout << "File does not exist in that commit.\n";
+    }
+    else
+    {
+        fs::path blob_path = current.get_value(file);
+        string contents;
+        retrieve(blob_path, contents);
+        ofstream out(abs_path);
+        out << contents;
+        out.close(); 
+    }    
 }
 
 void Repository::checkout(string commit_id, fs::path file)
 {
+    fs::path abs_path = CWD / file;
+    fs::path commit_path;
+    Commit current;
+    // retrieve()
+
     // Takes the version of the file as it exists in the commit with the given id, 
     // and puts it in the working directory, overwriting the version of the file that’s already there if there is one. 
     // The new version of the file is not staged.

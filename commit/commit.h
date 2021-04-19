@@ -3,7 +3,6 @@
 
 #include <map>
 #include <ctime>
-#include "../cereal/types/string.hpp"
 #include "../cereal/types/map.hpp"
 #include "../globals/globals.h"
 
