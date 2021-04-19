@@ -69,10 +69,8 @@ void Repository::commit(string message)
     else
     {
         // clone current commit
-        Commit parent;
         fs::path parent_path;
-        retrieve(HEAD_PATH, parent_path);
-        retrieve(parent_path, parent);
+        Commit parent = get_current_commit(parent_path);
         Commit current(parent, parent_path, message);
 
         // modify map of blobs
@@ -81,13 +79,13 @@ void Repository::commit(string message)
         {
             fs::path blob_path;
             retrieve(file, blob_path);
-            current.set_value(file, blob_path);
+            current.set_value(file.filename(), blob_path);
             fs::remove(file);
         }
         // if in rm, delete blob from map and remove file from stage
         for (const fs::path& file : fs::recursive_directory_iterator(RM_STAGE_DIR))
         {
-            current.remove_key(file);
+            current.remove_key(file.filename());
             fs::remove(file);
         }
 
@@ -111,13 +109,31 @@ void Repository::commit(string message)
 
 void Repository::rm(fs::path file)
 {
-    // if file is in add stage, unstage it
-    // if tracked in current commit
-        // stage for removal
-        // remove file from cwd
-    //  If the file is neither staged nor tracked by the head commit, 
-        // print the error message No reason to remove the file.
+    // get current commit
+    fs::path commit_path;
+    Commit current = get_current_commit(commit_path);
+    cout << "CURRENT COMMIT: " << current;
 
+    // if file is in add stage
+    if (fs::exists(ADD_STAGE_DIR / file)) 
+    {
+        // unstage it
+        fs::remove(ADD_STAGE_DIR / file);
+    }
+    // if tracked in current commit
+    else if (current.tracks(file))
+    {
+        // stage file for removal (contents don't matter)
+        string buffer;
+        store_in_file(buffer, RM_STAGE_DIR / file);
+        // remove file from cwd
+        fs::remove(CWD / file);
+    }
+    // if the file is neither staged nor tracked by the head commit
+    else
+    {
+        cout << "No reason to remove the file.\n";
+    }
 }
 
 void Repository::log()
@@ -271,4 +287,13 @@ bool Repository::in_commit(fs::path file)
     h2 += blob_path.filename().string();
     // return comparison
     return h1 == h2;
+}
+
+// PURPOSE: get current commit and commit path by reference
+Commit Repository::get_current_commit(fs::path& commit_path)
+{
+    Commit current;
+    retrieve(HEAD_PATH, commit_path);
+    retrieve(commit_path, current);
+    return current;
 }

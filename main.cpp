@@ -15,12 +15,17 @@ int main(int argc, char *argv[])
     else if (strcmp(argv[1], "add") == 0)
     {
         if (argc < 3) cout << "Please enter a file to add to the staging area.\n";
-        else repo.add(argv[2]);
+        else for (int i = 2; i < argc; i++) repo.add(argv[i]);
     }
     else if (strcmp(argv[1], "commit") == 0)
     {
-        if (argc < 3) cout << "Please enter a commit message.\n";
+        if (argc != 3) cout << "Please enter a commit message.\n";
         else repo.commit(argv[2]);
+    }
+    else if (strcmp(argv[1], "rm") == 0)
+    {
+        if (argc < 3) cout << "Please enter a file to remove.\n";
+        else for (int i = 2; i < argc; i++) repo.rm(argv[i]);
     }
     
     else if (strcmp(argv[1], "log") == 0)
@@ -35,10 +40,7 @@ int main(int argc, char *argv[])
     {
         cout << "Running status." << endl;
     }
-    else if (strcmp(argv[1], "rm") == 0)
-    {
-        cout << "Running global log." << endl;
-    }
+    
     else if (strcmp(argv[1], "find") == 0)
     {
         cout << "Running status." << endl;

@@ -28,6 +28,8 @@ private:
     fs::path _head;      // head of current branch
     // PURPOSE: return if file is equal to file in current commit
     bool in_commit(fs::path file);
+    // PURPOSE: get current commit and commit path by reference
+    Commit get_current_commit(fs::path& commit_path);
 };
 
 #endif // REPOSITORY_H

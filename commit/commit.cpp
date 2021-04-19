@@ -41,10 +41,19 @@ void Commit::set_uid(string uid)
     _uid = uid;
 }
 
+// PURPOSE: return if tracks file
+bool Commit::tracks(fs::path file)
+{
+    int num = _blobs.count(file);
+    return num != 0;
+}
+
 ostream& operator<<(ostream& outs, const Commit c)
 {
     outs << "===\ncommit " << c._uid << endl;
     outs << "Date: " << ctime(&c._timestamp);
     outs << c._message << endl;
+    // for (auto const &pair: c._blobs)
+    //     std::cout << "{" << pair.first << ": " << pair.second << "}\n";
     return outs;
 }

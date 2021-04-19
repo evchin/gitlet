@@ -22,6 +22,8 @@ public:
     void remove_key(fs::path key);
     // PURPOSE: set uid
     void set_uid(string uid);
+    // PURPOSE: return if tracks file
+    bool tracks(fs::path file);
     // PURPOSE: print commit
     friend ostream& operator<<(ostream& outs, const Commit c);
     // PURPOSE: for serialization
