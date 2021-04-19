@@ -29,6 +29,7 @@ public:
     string get_message();
     // PURPOSE: get uid
     string get_uid();
+
     // PURPOSE: print commit
     friend ostream& operator<<(ostream& outs, const Commit c);
     // PURPOSE: for serialization
@@ -41,7 +42,7 @@ private:
     string _message;
     time_t _timestamp;
     fs::path _parent;
-    string _uid;
+    string _uid = "";
     map<fs::path, fs::path> _blobs;
 };
 

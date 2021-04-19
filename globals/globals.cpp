@@ -22,8 +22,7 @@ string get_hash(fs::path file)
     stringstream buffer;
     buffer << file_stream.rdbuf();
     // return hash
-    string out = sha1(buffer.str());
-    return out;
+    return sha1(buffer.str());
 }
 
 string get_hash(string data)

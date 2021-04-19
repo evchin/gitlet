@@ -27,7 +27,7 @@ string get_hash(string data);
 fs::path store_file(fs::path filepath, fs::path folder);
 
 // PURPOSE: stores serialized object in a subfolder/file system within folder
-// RETURNS: file path
+// DO NOT STORE COMMITS USING THIS METHOD.
 template <typename T>
 fs::path store(T obj, fs::path folder)
 {
@@ -43,7 +43,6 @@ fs::path store(T obj, fs::path folder)
     create_directory(subfolder);
     ofstream file(file_path);
     file << ss.str();
-    
     return file_path;
 }
 

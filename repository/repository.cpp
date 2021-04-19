@@ -24,7 +24,7 @@ void Repository::init()
 
         // create initial commit
         Commit commit;
-        fs::path file_path = store(commit, COMMITS_DIR / MASTER_BRANCH);
+        fs::path file_path = store_commit(commit, COMMITS_DIR / MASTER_BRANCH);
 
         // assign heads
         _master = file_path;
@@ -36,6 +36,7 @@ void Repository::init()
     }
 }
 
+// TODO: fix where file is being added even though same as commit
 void Repository::add(fs::path file)
 {
     fs::path abs_path = CWD / file;
@@ -93,17 +94,10 @@ void Repository::commit(string message)
             fs::remove(file);
         }
 
-        // update uid of current commit
-        stringstream ss;
-        cereal::BinaryOutputArchive oarchive(ss);
-        oarchive(current);
-        string uid = get_hash(ss.str());
-        current.set_uid(uid);
-
         // store serialized commit into commits folder under current branch
         string branch_name;
         retrieve(CURRENT_BRANCH_PATH, branch_name);
-        fs::path commit_path = store(current, COMMITS_DIR / branch_name);
+        fs::path commit_path = store_commit(current, COMMITS_DIR / branch_name);
 
         // advance heads (head and master)
         if (branch_name == MASTER_BRANCH) store_in_file(commit_path, MASTER_PATH);
@@ -348,4 +342,35 @@ string Repository::get_current_branch()
     string branch;
     retrieve(CURRENT_BRANCH_PATH, branch);
     return branch;
+}
+
+// PURPOSE: serialize and store commit
+// PREREQ: uid is updated
+fs::path Repository::store_commit(Commit c, fs::path folder)
+{
+
+    // update commit uid
+    if (c.get_uid() == "")
+    {
+        stringstream ss;
+        cereal::BinaryOutputArchive oarchive(ss);
+        oarchive(c);
+        c.set_uid(get_hash(ss.str()));
+    }
+
+    // serialize with uid
+    stringstream ss;
+    cereal::BinaryOutputArchive oarchive(ss);
+    oarchive(c);
+
+    // get directories and files
+    fs::path subfolder = folder / c.get_uid().substr(0, 2);
+    fs::path file_path = subfolder / c.get_uid().substr(2, c.get_uid().length() - 2);
+    
+    // create subfolder and file, and write to file
+    create_directory(subfolder);
+    ofstream file(file_path);
+    file << ss.str();
+    
+    return file_path;
 }

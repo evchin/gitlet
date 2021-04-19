@@ -32,6 +32,8 @@ private:
     Commit get_current_commit(fs::path& commit_path);
     // PURPOSE: get current branch
     string get_current_branch();
+    // PURPOSE: serialize and store commit
+    fs::path store_commit(Commit c, fs::path folder);
 };
 
 #endif // REPOSITORY_H
