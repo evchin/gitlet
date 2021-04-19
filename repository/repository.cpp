@@ -16,27 +16,19 @@ void Repository::init()
         create_directory(ADD_STAGE_DIR);
         create_directory(RM_STAGE_DIR);
         create_directory(COMMITS_DIR);
-        create_directory(MASTER_DIR);
+        create_directory(COMMITS_DIR / MASTER_BRANCH);
         create_directory(BLOBS_DIR);
 
         Commit commit;
-        fs::path file_path = store(commit, MASTER_DIR);
+        fs::path file_path = store(commit, COMMITS_DIR / MASTER_BRANCH);
 
         // assign heads
         _master = file_path;
         _head = file_path;
-        // serialize master
-        {
-            ofstream os(MASTER_PATH, ios::binary);
-            cereal::BinaryOutputArchive oarchive(os);
-            oarchive(_master);
-        }
-        // serialize head
-        {
-            ofstream os(HEAD_PATH, ios::binary);
-            cereal::BinaryOutputArchive oarchive(os);
-            oarchive(_head);
-        }
+        // store master, head, and current branch
+        store_in_file(_master, MASTER_PATH);
+        store_in_file(_head, HEAD_PATH);
+        store_in_file(MASTER_BRANCH, CURRENT_BRANCH_PATH);
     }
 }
 
@@ -62,30 +54,59 @@ void Repository::add(fs::path file)
         {
             // store contents of file in blob
             fs::path blob_path = store(abs_path, BLOBS_DIR);
-            // create file in add stage
-            ofstream staged_file(ADD_STAGE_DIR / file, ios::binary);
-            // store blob_path in staged_file
-            cereal::BinaryOutputArchive oarchive(staged_file);
-            oarchive(blob_path);
+            store_in_file(blob_path, ADD_STAGE_DIR / file);
         }
     }
 }
 
 void Repository::commit(string message)
 {
-    // if no files in ADD_STAGE_DIR or RM_STAGE_DIR
-        // print "No changes added to the commit."
+    // if ADD_STAGE_DIR and RM_STAGE_DIR are empty
+    if (fs::is_empty(ADD_STAGE_DIR) && fs::is_empty(RM_STAGE_DIR))
+    {
+        cout << "No changes added to the commit.\n";
+    }
+    else
+    {
+        // clone current commit
+        Commit parent;
+        fs::path parent_path;
+        retrieve(HEAD_PATH, parent_path);
+        retrieve(parent_path, parent);
+        Commit current(parent, parent_path, message);
 
-    // create next commit (a clone of the parent commit, which is the current commit)
-        // change the metadata message and timestamp, and set parent
-    // modify map of blobs by looking in ADD_STAGE_DIR and RM_STAGE_DIR
-        // if in add, overwrite the respective blob in the vector
-        // if in rm, delete the respective blob from the vector completely
+        // modify map of blobs
+        // if in add, overwrite the blob in map and remove file from stage
+        for (const fs::path& file : fs::recursive_directory_iterator(ADD_STAGE_DIR))
+        {
+            fs::path blob_path;
+            retrieve(file, blob_path);
+            current.set_value(file, blob_path);
+            fs::remove(file);
+        }
+        // if in rm, delete blob from map and remove file from stage
+        for (const fs::path& file : fs::recursive_directory_iterator(RM_STAGE_DIR))
+        {
+            current.remove_key(file);
+            fs::remove(file);
+        }
 
-    // clear the staging area
-    // REMEMBER: commit never adds, changes, or removes files in the working directory
-    // add commit to Commit Tree ????
-    // advance heads (head and HEAD)
+        // update uid of current commit
+        stringstream ss;
+        cereal::BinaryOutputArchive oarchive(ss);
+        oarchive(current);
+        string uid = get_hash(ss.str());
+        current.set_uid(uid);
+
+        // store serialized commit into commits folder under current branch
+        string branch_name;
+        retrieve(CURRENT_BRANCH_PATH, branch_name);
+        fs::path commit_path = store(current, COMMITS_DIR / branch_name);
+
+        // advance heads (head and master)
+        if (branch_name == MASTER_BRANCH) store_in_file(commit_path, MASTER_PATH);
+        store_in_file(commit_path, HEAD_PATH);
+    }
 }
 
 void Repository::rm(fs::path file)

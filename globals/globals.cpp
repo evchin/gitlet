@@ -6,10 +6,14 @@ fs::path STAGE_DIR = REPO_DIR / "stages";
 fs::path ADD_STAGE_DIR = STAGE_DIR / "add";
 fs::path RM_STAGE_DIR = STAGE_DIR / "rm";
 fs::path COMMITS_DIR = REPO_DIR / "commits";
-fs::path MASTER_DIR = COMMITS_DIR / "master";
 fs::path BLOBS_DIR = REPO_DIR / "blobs";
+fs::path BRANCHES_DIR = REPO_DIR / "branches";
+
 fs::path MASTER_PATH = REPO_DIR / "MASTER";
 fs::path HEAD_PATH = REPO_DIR / "HEAD";
+fs::path CURRENT_BRANCH_PATH = REPO_DIR / "CURRENT_BRANCH";
+
+string MASTER_BRANCH = "master";
 
 string get_hash(fs::path file)
 {

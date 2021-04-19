@@ -14,10 +14,11 @@ extern fs::path STAGE_DIR;
 extern fs::path ADD_STAGE_DIR;
 extern fs::path RM_STAGE_DIR;
 extern fs::path COMMITS_DIR;
-extern fs::path MASTER_DIR;
 extern fs::path BLOBS_DIR;
 extern fs::path MASTER_PATH;
 extern fs::path HEAD_PATH;
+extern fs::path CURRENT_BRANCH_PATH;
+extern string MASTER_BRANCH;
 
 string get_hash(fs::path file);
 string get_hash(string data);
@@ -53,6 +54,16 @@ fs::path store(fs::path filepath, fs::path folder)
     stringstream buffer;
     buffer << file_stream.rdbuf();
     return store(buffer.str(), folder);
+}
+
+// PURPOSE: stores object directly in file
+template <typename T>
+void store_in_file(T object, fs::path file)
+{
+    // read in file
+    ofstream os(file, ios::binary);
+    cereal::BinaryOutputArchive oarchive(os);
+    oarchive(object);
 }
 
 template <typename T>

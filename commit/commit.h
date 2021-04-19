@@ -12,12 +12,19 @@ class Commit
 public:
     // PURPOSE: initial commit
     Commit();
-    // PURPOSE: commit with message
-    Commit(string message);
+    // PURPOSE: clones commit c and reassigns message and timestamp
+    Commit(const Commit& c, fs::path parent_path, string message);
     // PURPOSE: return blob path given file path
     fs::path get_value(fs::path key);
+    // PURPOSE: set blob path value for a filepath key
+    void set_value(fs::path key, fs::path value);
+    // PURPOSE: remove key from map
+    void remove_key(fs::path key);
+    // PURPOSE: set uid
+    void set_uid(string uid);
+    // PURPOSE: print commit
     friend ostream& operator<<(ostream& outs, const Commit c);
-
+    // PURPOSE: for serialization
     template<class Archive>
     void serialize(Archive & archive)
     {
