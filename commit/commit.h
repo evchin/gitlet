@@ -26,6 +26,10 @@ public:
     bool tracks(fs::path file);
     // PURPOSE: get parent commit's path
     fs::path parent_path();
+    // PURPOSE: get message
+    string get_message();
+    // PURPOSE: get uid
+    string get_uid();
     // PURPOSE: print commit
     friend ostream& operator<<(ostream& outs, const Commit c);
     // PURPOSE: for serialization

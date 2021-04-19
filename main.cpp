@@ -35,25 +35,28 @@ int main(int argc, char *argv[])
     {
         repo.global_log();
     }
+    else if (strcmp(argv[1], "find") == 0)
+    {
+        if (argc != 3) cout << "Please enter a commit message to find.\n";
+        else repo.find(argv[2]);
+    }
+    else if (strcmp(argv[1], "branch") == 0)
+    {
+        if (argc != 3) cout << "Please enter a branch name.\n";
+        else repo.branch(argv[2]);
+    }
+    else if (strcmp(argv[1], "rm-branch") == 0)
+    {
+        if (argc != 3) cout << "Please enter a branch to remove.\n";
+        else repo.rm_branch(argv[2]);
+    }
+
 
     else if (strcmp(argv[1], "status") == 0)
     {
         cout << "Running status." << endl;
     }
-    
-    else if (strcmp(argv[1], "find") == 0)
-    {
-        cout << "Running status." << endl;
-    }
     else if (strcmp(argv[1], "checkout") == 0)
-    {
-        cout << "Running status." << endl;
-    }
-    else if (strcmp(argv[1], "branch") == 0)
-    {
-        cout << "Running status." << endl;
-    }
-    else if (strcmp(argv[1], "rm_branch") == 0)
     {
         cout << "Running status." << endl;
     }
@@ -71,12 +74,9 @@ int main(int argc, char *argv[])
     }
     std::exit(0);
     
-    // rm(string file){}
-    // find(string message){}
     // checkout(string file){}
     // checkout(string branch){}
     // checkout(string commit_id, string file){}
-    // branch(string name){}
     // rm_branch(string name){}
     // reset(string commit_id){}
     // merge(string branch_name){}

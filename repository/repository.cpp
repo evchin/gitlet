@@ -18,6 +18,7 @@ void Repository::init()
         create_directory(COMMITS_DIR);
         create_directory(COMMITS_DIR / MASTER_BRANCH);
         create_directory(BLOBS_DIR);
+        create_directory(BRANCHES_DIR);
 
         // create initial commit
         Commit commit;
@@ -113,7 +114,6 @@ void Repository::rm(fs::path file)
     // get current commit
     fs::path commit_path;
     Commit current = get_current_commit(commit_path);
-    cout << "CURRENT COMMIT: " << current;
 
     // if file is in add stage
     if (fs::exists(ADD_STAGE_DIR / file)) 
@@ -138,9 +138,7 @@ void Repository::rm(fs::path file)
 }
 
 void Repository::log()
-{
-    // TODO: ignoring any second parents found in merge commits
-    
+{   
     // get current commit
     fs::path commit_path;
     Commit head = get_current_commit(commit_path);
@@ -151,63 +149,73 @@ void Repository::log()
     {
         retrieve(head.parent_path(), head);
         cout << head;
-    }
-
-    // TODO: Merge commits?
-    // ===
-    // commit 3e8bf1d794ca2e9ef8a4007275acf3751c7170ff
-    // Merge: 4975af1 2c1ead1
-    // Date: Sat Nov 11 12:30:00 2017 -0800
-    // Merged development into master.
-    // the two hexadecimal numerals following “Merge:” consist of the first seven digits of the first and second parents’ commit ids, in that order. 
+    } 
 }
 
 void Repository::global_log()
 {
-    for (const fs::path& folder : fs::recursive_directory_iterator(COMMITS_DIR))
+    for (const fs::path& f : fs::recursive_directory_iterator(COMMITS_DIR))
     {
-        for (const fs::path& subfolder : fs::recursive_directory_iterator(folder))
+        if (!fs::is_directory(f))
         {
-            for (const fs::path& file : fs::recursive_directory_iterator(subfolder))
-            {
-                Commit c;
-                retrieve(file, c);
-                cout << c;
-            }
+            Commit c;
+            retrieve(f, c);
+            cout << c;
         }
     }
 }
 
 void Repository::find(string message)
 {
-    // If no such commit exists, prints the error message Found no commit with that message.
-    // Prints out the ids of all commits that have the given commit message, one per line. 
-    // The commit message is a single operand; to indicate a multiword message, put the operand in quotation marks, as for the commit command below. 
-    // Hint: the hint for this command is the same as the one for global-log.
+    int num = 0;
+    for (const fs::path& f : fs::recursive_directory_iterator(COMMITS_DIR))
+    {
+        if (!fs::is_directory(f))
+        {
+            Commit c;
+            retrieve(f, c);
+            if (c.get_message() == message) 
+            {
+                cout << c.get_uid() << endl;
+                num++;
+            }
+        }
+    }
+    if (num == 0)
+    {
+        cout << "Found no commit with that message." << endl;
+    }
 }
-void Repository::status()
-{
-    // === Branches ===
-    // *master
-    // other-branch
-    
-    // === Staged Files ===
-    // wug.txt
-    // wug2.txt
-    
-    // === Removed Files ===
-    // goodbye.txt
-    
-    // LATER ON
-    // === Modifications Not Staged For Commit ===
-    // junk.txt (deleted)
-    // wug3.txt (modified)
-    // SEE SPEC
-    
-    // === Untracked Files ===
-    // random.stuff
 
-    // Entries should be listed in lexicographic order, using the Java string-comparison order (the asterisk doesn’t count)
+void Repository::branch(string name)
+{
+    if (fs::exists(BRANCHES_DIR / name))
+    {
+        cout << "A branch with that name already exists.\n";
+    }
+    else
+    {
+        // create new branch file with pointer to head commit
+        fs::path head;
+        retrieve(HEAD_PATH, head);
+        store_in_file(head, BRANCHES_DIR / name);
+    }
+}
+
+void Repository::rm_branch(string name)
+{
+    if (!fs::exists(BRANCHES_DIR / name))
+    {
+        cout << "A branch with that name does not exist.\n";
+    }
+    else if (get_current_branch() == name)
+    {
+        cout << "Cannot remove the current branch.\n";
+    }
+    else
+    {
+        fs::remove(BRANCHES_DIR / name);
+    }
 }
 
 void Repository::checkout(fs::path file)
@@ -242,25 +250,6 @@ void Repository::checkout(string branch)
     // The staging area is cleared, unless the checked-out branch is the current branch (see Failure cases below).
 }
 
-void Repository::branch(string name)
-{
-    // If a branch with the given name already exists, print the error message A branch with that name already exists.
-    // Creates a new branch with the given name, and points it at the current head commit. 
-    // A branch is nothing more than a name for a reference (a SHA-1 identifier) to a commit node. 
-    // This command does NOT immediately switch to the newly created branch (just as in real Git). 
-    // Before you ever call branch, your code should be running with a default branch called “master”.
-}
-
-void Repository::rm_branch(string name)
-{
-    //  If a branch with the given name does not exist, aborts. Print the error message A branch with that name does not exist. 
-    // If you try to remove the branch you’re currently on, aborts, printing the error message Cannot remove the current branch.
-    
-    // Deletes the branch with the given name. 
-    // This only means to delete the pointer associated with the branch; 
-    // it does not mean to delete all commits that were created under the branch, or anything like that.
-}
-
 void Repository::reset(string commit_id)
 {
     // If no commit with the given id exists, print No commit with that id exists. 
@@ -274,6 +263,31 @@ void Repository::reset(string commit_id)
     // The [commit id] may be abbreviated as for checkout. 
     // The staging area is cleared. 
     // The command is essentially checkout of an arbitrary commit that also changes the current branch head.
+}
+
+void Repository::status()
+{
+    // === Branches ===
+    // *master
+    // other-branch
+    
+    // === Staged Files ===
+    // wug.txt
+    // wug2.txt
+    
+    // === Removed Files ===
+    // goodbye.txt
+    
+    // LATER ON
+    // === Modifications Not Staged For Commit ===
+    // junk.txt (deleted)
+    // wug3.txt (modified)
+    // SEE SPEC
+    
+    // === Untracked Files ===
+    // random.stuff
+
+    // Entries should be listed in lexicographic order, using the Java string-comparison order (the asterisk doesn’t count)
 }
 
 void Repository::merge(string branch_name)
@@ -306,4 +320,12 @@ Commit Repository::get_current_commit(fs::path& commit_path)
     retrieve(HEAD_PATH, commit_path);
     retrieve(commit_path, current);
     return current;
+}
+
+// PURPOSE: get current branch
+string Repository::get_current_branch()
+{
+    string branch;
+    retrieve(CURRENT_BRANCH_PATH, branch);
+    return branch;
 }

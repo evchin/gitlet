@@ -53,6 +53,16 @@ fs::path Commit::parent_path()
     return _parent;
 }
 
+string Commit::get_message()
+{
+    return _message;
+}
+
+string Commit::get_uid()
+{
+    return _uid;
+}
+
 ostream& operator<<(ostream& outs, const Commit c)
 {
     outs << "===\ncommit " << c._uid << endl;
@@ -61,4 +71,12 @@ ostream& operator<<(ostream& outs, const Commit c)
     // for (auto const &pair: c._blobs)
     //     std::cout << "{" << pair.first << ": " << pair.second << "}\n";
     return outs;
+
+    // TODO: Merge commits?
+    // ===
+    // commit 3e8bf1d794ca2e9ef8a4007275acf3751c7170ff
+    // Merge: 4975af1 2c1ead1
+    // Date: Sat Nov 11 12:30:00 2017 -0800
+    // Merged development into master.
+    // the two hexadecimal numerals following “Merge:” consist of the first seven digits of the first and second parents’ commit ids, in that order.
 }

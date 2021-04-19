@@ -30,6 +30,8 @@ private:
     bool in_commit(fs::path file);
     // PURPOSE: get current commit and commit path by reference
     Commit get_current_commit(fs::path& commit_path);
+    // PURPOSE: get current branch
+    string get_current_branch();
 };
 
 #endif // REPOSITORY_H

@@ -8,8 +8,8 @@ fs::path RM_STAGE_DIR = STAGE_DIR / "rm";
 fs::path COMMITS_DIR = REPO_DIR / "commits";
 fs::path BLOBS_DIR = REPO_DIR / "blobs";
 fs::path BRANCHES_DIR = REPO_DIR / "branches";
+fs::path MASTER_PATH = BRANCHES_DIR / "MASTER";
 
-fs::path MASTER_PATH = REPO_DIR / "MASTER";
 fs::path HEAD_PATH = REPO_DIR / "HEAD";
 fs::path CURRENT_BRANCH_PATH = REPO_DIR / "CURRENT_BRANCH";
 

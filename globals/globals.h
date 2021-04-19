@@ -15,9 +15,10 @@ extern fs::path ADD_STAGE_DIR;
 extern fs::path RM_STAGE_DIR;
 extern fs::path COMMITS_DIR;
 extern fs::path BLOBS_DIR;
-extern fs::path MASTER_PATH;
+extern fs::path BRANCHES_DIR;
 extern fs::path HEAD_PATH;
 extern fs::path CURRENT_BRANCH_PATH;
+extern fs::path MASTER_PATH;
 extern string MASTER_BRANCH;
 
 string get_hash(fs::path file);
