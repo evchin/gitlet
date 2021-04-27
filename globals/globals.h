@@ -36,7 +36,7 @@ fs::path store(T obj, fs::path folder)
     cereal::BinaryOutputArchive oarchive(ss);
     oarchive(obj);
     // get file's hash
-    string hash = get_hash(ss.str());
+    string hash = get_hash(obj);
     fs::path subfolder = folder / hash.substr(0, 2);
     fs::path file_path = subfolder / hash.substr(2, hash.length() - 2);
     // create subfolder and file, and write to file

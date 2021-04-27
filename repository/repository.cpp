@@ -1,6 +1,8 @@
 #include "repository.h"
 
 // TODO: remember to close all streams...
+// TODO: Test other than txt files
+// TODO: Test with folders too
 
 Repository::Repository(){}
 
@@ -36,13 +38,26 @@ void Repository::init()
     }
 }
 
-// TODO: fix where file is being added even though same as commit
 void Repository::add(fs::path file)
 {
     fs::path abs_path = CWD / file;
 
+    // if file is staged for removal 
+    if (fs::exists(RM_STAGE_DIR / file))
+    {
+        // add file back to CWD
+        fs::path blob_path;
+        retrieve(RM_STAGE_DIR / file, blob_path);
+        string contents;
+        retrieve(blob_path, contents);
+        ofstream out(abs_path);
+        out << contents;
+        out.close(); 
+        // unstage file
+        fs::remove(RM_STAGE_DIR / file);
+    }
     // if file doesn't exist
-    if (!fs::exists(abs_path))
+    else if (!fs::exists(abs_path))
     {
         cout << "File does not exist.\n";
     }
@@ -51,9 +66,8 @@ void Repository::add(fs::path file)
         // check if file is equal to file in current commit
         if (in_commit(file))
         {
-            // if file is in add or rm stage, remove it
-            if (fs::exists(ADD_STAGE_DIR / file)) fs::remove(ADD_STAGE_DIR / file);
-            if (fs::exists(RM_STAGE_DIR / file)) fs::remove(RM_STAGE_DIR / file);
+            if (fs::exists(ADD_STAGE_DIR / file)) 
+                fs::remove(ADD_STAGE_DIR / file);
         }
         else
         {
@@ -120,9 +134,10 @@ void Repository::rm(fs::path file)
     // if tracked in current commit
     else if (current.tracks(file))
     {
-        // stage file for removal (contents don't matter)
-        string buffer;
-        store_in_file(buffer, RM_STAGE_DIR / file);
+        // store contents of file in blob
+        fs::path blob_path = store_file(CWD / file, BLOBS_DIR);
+        // stage for removal
+        store_in_file(blob_path, RM_STAGE_DIR / file);
         // remove file from cwd
         fs::remove(CWD / file);
     }
@@ -237,31 +252,82 @@ void Repository::checkout(fs::path file)
 
 void Repository::checkout(string commit_id, fs::path file)
 {
-    fs::path abs_path = CWD / file;
-    fs::path commit_path;
-    Commit current;
-    // retrieve()
+    ofstream outs(CWD / file);
+    Commit commit;
 
-    // Takes the version of the file as it exists in the commit with the given id, 
-    // and puts it in the working directory, overwriting the version of the file that’s already there if there is one. 
-    // The new version of the file is not staged.
-    // If no commit with the given id exists, print "No commit with that id exists." 
-    // Otherwise, if the file does not exist in the given commit, print File does not exist in that commit. Do not change the CWD.
+    // if commit does not exist
+    if (!retrieve_commit(commit_id, commit)) cout << "No commit with that id exists." << endl;
+    else
+    {
+        fs::path blob_path = commit.get_value(file);
+
+        // if file does not exist in commit
+        if (blob_path == "") cout << "File does not exist in that commit." << endl;
+        else
+        {
+            // overwrite file in CWD
+            string contents;
+            retrieve(blob_path, contents);
+            outs << contents;
+        }
+    }
+
+    outs.close();
 }
 
 void Repository::checkout(string branch)
 {
-    // If no branch with that name exists, print "No such branch exists." 
-    // If that branch is the current branch, print "No need to checkout the current branch." 
-    // If a working file is untracked in the current branch 
-        // and would be overwritten by the checkout, print "There is an untracked file in the way; delete it, or add and commit it first." and exit; 
-        // perform this check before doing anything else. Do not change the CWD.
-    
-    // Takes all files in the commit at the head of the given branch, 
-    // and puts them in the working directory, overwriting the versions of the files that are already there if they exist. 
-    // Also, at the end of this command, the given branch will now be considered the current branch (HEAD). 
-    // Any files that are tracked in the current branch but are not present in the checked-out branch are deleted. 
-    // The staging area is cleared, unless the checked-out branch is the current branch (see Failure cases below).
+    // failure checks
+    if (!fs::exists(BRANCHES_DIR / branch)) 
+        cout << "No such branch exists." << endl;
+    else if (get_current_branch() == branch) 
+        cout << "No need to checkout the current branch." << endl;
+    else if (!fs::is_empty(ADD_STAGE_DIR) || !fs::is_empty(RM_STAGE_DIR)) 
+        cout << "There is a staged file in the way; unstage and delete it, or commit it first." << endl;
+    else
+    {
+        // check for untracked files not in current commit
+        fs::path current_path;
+        Commit current = get_current_commit(current_path);
+        bool has_untracked = false;
+        string untracked_files = "";
+        for (const fs::path& f : fs::recursive_directory_iterator(CWD))
+        {
+            fs::path relative = f.lexically_relative(CWD);
+            // if path does not contain ".gitlet" or is "gitlet.exe"
+            if (relative.string().find(".gitlet") == string::npos  
+                && relative.string().find("gitlet.exe") == string::npos)
+            {
+                if (!current.matches(relative))
+                {
+                    has_untracked = true;
+                    untracked_files += relative.string();
+                    untracked_files += "\n";
+                }
+            }
+        }
+
+        if (has_untracked)
+        {
+            cout << "There is an untracked file in the way; delete it, or add and commit it first.\n\n";
+            cout << "Untracked files:\n" << untracked_files << endl;
+            exit(0);
+        }
+
+        // get given commit
+        fs::path head_commit_path;
+        Commit commit;
+        retrieve(BRANCHES_DIR / branch, head_commit_path);
+        retrieve(head_commit_path, commit); 
+
+        // call commit's checkout
+        commit.checkout();
+
+        // change current branch to given branch 
+        store_in_file(branch, CURRENT_BRANCH_PATH);
+        // change head to be latest commit of given branch
+        store_in_file(head_commit_path, HEAD_PATH);
+    }
 }
 
 void Repository::reset(string commit_id)
@@ -315,16 +381,10 @@ bool Repository::in_commit(fs::path file)
     fs::path abs_path = CWD / file;
     // get hash of current file
     string h1 = get_hash(abs_path);
-    // get hash of commit's file
-    Commit commit;
-    fs::path commit_file;
-    retrieve(HEAD_PATH, commit_file);
-    retrieve(commit_file, commit);
-    fs::path blob_path = commit.get_value(file);
-    string h2 = blob_path.parent_path().filename().string();
-    h2 += blob_path.filename().string();
-    // return comparison
-    return h1 == h2;
+    // get commit
+    fs::path commit_path;
+    Commit commit = get_current_commit(commit_path);
+    return commit.matches(file);
 }
 
 // PURPOSE: get current commit and commit path by reference
@@ -344,11 +404,23 @@ string Repository::get_current_branch()
     return branch;
 }
 
+// PURPOSE: retrieve commit with id, return true if commit exists
+// PREREQ: commit must exist
+bool Repository::retrieve_commit(string uid, Commit& c)
+{
+    cout << "Retrieving commit " << uid << endl;
+    string branch = get_current_branch();
+    fs::path subfolder = COMMITS_DIR / branch / uid.substr(0, 2);
+    fs::path file_path = subfolder / uid.substr(2, uid.length() - 2);
+    if (!fs::exists(file_path)) return false;
+    retrieve(file_path, c);
+    return true;
+}
+
 // PURPOSE: serialize and store commit
 // PREREQ: uid is updated
 fs::path Repository::store_commit(Commit c, fs::path folder)
 {
-
     // update commit uid
     if (c.get_uid() == "")
     {

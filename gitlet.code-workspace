@@ -15,7 +15,11 @@
 			"ostream": "cpp",
 			"iosfwd": "cpp",
 			"xutility": "cpp",
-			"xtree": "cpp"
+			"xtree": "cpp",
+			"regex": "cpp",
+			"sstream": "cpp",
+			"xiosbase": "cpp",
+			"fstream": "cpp"
 		}
 	}
 }

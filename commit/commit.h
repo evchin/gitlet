@@ -21,14 +21,18 @@ public:
     void remove_key(fs::path key);
     // PURPOSE: set uid
     void set_uid(string uid);
-    // PURPOSE: return if tracks file
+    // PURPOSE: return if file exists in commit
     bool tracks(fs::path file);
+    // PURPOSE: return true if file is the exact same as file in commit
+    bool matches(fs::path file);
     // PURPOSE: get parent commit's path
     fs::path parent_path();
     // PURPOSE: get message
     string get_message();
     // PURPOSE: get uid
     string get_uid();
+    // PURPOSE: checkout commit in CWD (DANGEROUS!)
+    void checkout();
 
     // PURPOSE: print commit
     friend ostream& operator<<(ostream& outs, const Commit c);
@@ -38,11 +42,13 @@ public:
     {
         archive(_message, _timestamp, _parent, _uid, _blobs);
     }
+
 private:
     string _message;
     time_t _timestamp;
     fs::path _parent;
     string _uid = "";
+    // map of file name to blob path
     map<fs::path, fs::path> _blobs;
 };
 

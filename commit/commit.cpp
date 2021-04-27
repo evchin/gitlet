@@ -47,6 +47,20 @@ bool Commit::tracks(fs::path file)
     return num != 0;
 }
 
+// PREREQ: only use relative paths, NOT absolute ones
+bool Commit::matches(fs::path file)
+{
+    fs::path abs_path = CWD / file;
+    // get hash of current file
+    string h1 = get_hash(abs_path);
+    // get hash of commit's file
+    fs::path blob_path = get_value(file);
+    string h2 = blob_path.parent_path().filename().string();
+    h2 += blob_path.filename().string();
+    // return comparison
+    return h1 == h2;
+}
+
 // PURPOSE: get path to parent commit
 fs::path Commit::parent_path()
 {
@@ -61,6 +75,42 @@ string Commit::get_message()
 string Commit::get_uid()
 {
     return _uid;
+}
+
+void Commit::checkout()
+{
+    for (const fs::path& f : fs::recursive_directory_iterator(CWD))
+    {
+        fs::path relative = f.lexically_relative(CWD);
+        fs::path blob_path = get_value(relative);
+
+        // if path contains .gitlet or gitlet.exe, continue
+        if (relative.string().find(".gitlet") != string::npos  
+            || relative.string().find("gitlet.exe") != string::npos) continue;
+        
+        // if current file does not exist in commit, remove
+        if (blob_path == "") fs::remove(f);
+        // else, overwrite  
+        else
+        {
+            string contents;
+            retrieve(blob_path, contents);
+            ofstream outs(f);
+            outs << contents;
+        }
+    }
+
+    // iterate through blobs to add files not in CWD
+    for (auto const& [file, blobpath] : _blobs)
+    {
+        if (!fs::exists(CWD / file))   
+        {
+            string contents;
+            retrieve(blobpath, contents);
+            ofstream outs(CWD / file);
+            outs << contents;
+        }
+    }
 }
 
 ostream& operator<<(ostream& outs, const Commit c)
