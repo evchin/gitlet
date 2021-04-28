@@ -40,3 +40,11 @@ fs::path store_file(fs::path filepath, fs::path folder)
     buffer << file_stream.rdbuf();
     return store(buffer.str(), folder);
 }
+
+// PURPOSE: get current branch
+string get_current_branch()
+{
+    string branch;
+    retrieve(CURRENT_BRANCH_PATH, branch);
+    return branch;
+}

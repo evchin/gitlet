@@ -19,7 +19,10 @@
 			"regex": "cpp",
 			"sstream": "cpp",
 			"xiosbase": "cpp",
-			"fstream": "cpp"
+			"fstream": "cpp",
+			"algorithm": "cpp",
+			"xlocale": "cpp",
+			"xmemory": "cpp"
 		}
 	}
 }

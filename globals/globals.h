@@ -1,6 +1,7 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
+#include "../cereal/types/map.hpp"
 #include <fstream>
 #include "../overloads/overloads.h"
 #include "../sha1/sha1.h"
@@ -24,6 +25,7 @@ extern string MASTER_BRANCH;
 
 string get_hash(fs::path file);
 string get_hash(string data);
+string get_current_branch();
 fs::path store_file(fs::path filepath, fs::path folder);
 
 // PURPOSE: stores serialized object in a subfolder/file system within folder

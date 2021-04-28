@@ -3,6 +3,8 @@
 // TODO: remember to close all streams...
 // TODO: Test other than txt files
 // TODO: Test with folders too
+// TODO: made modifications - checkout would be allowed to happen under gitlet if files in staging area. didn't quite understand why, as git does not permit this. so i ignored this qualification.
+// TODO: REmove redundant CURRENT_BRANCH and HEAD FILE
 
 Repository::Repository(){}
 
@@ -210,6 +212,9 @@ void Repository::branch(string name)
         fs::path head;
         retrieve(HEAD_PATH, head);
         store_in_file(head, BRANCHES_DIR / name);
+
+        // create new branch folder under commits
+        create_directory(COMMITS_DIR / name);
     }
 }
 
@@ -289,29 +294,22 @@ void Repository::checkout(string branch)
         // check for untracked files not in current commit
         fs::path current_path;
         Commit current = get_current_commit(current_path);
-        bool has_untracked = false;
-        string untracked_files = "";
-        for (const fs::path& f : fs::recursive_directory_iterator(CWD))
-        {
-            fs::path relative = f.lexically_relative(CWD);
-            // if path does not contain ".gitlet" or is "gitlet.exe"
-            if (relative.string().find(".gitlet") == string::npos  
-                && relative.string().find("gitlet.exe") == string::npos)
-            {
-                if (!current.matches(relative))
-                {
-                    has_untracked = true;
-                    untracked_files += relative.string();
-                    untracked_files += "\n";
-                }
-            }
-        }
 
+        string untracked_files = "";
+        bool has_untracked = current.check_for_untracked(untracked_files);
         if (has_untracked)
         {
             cout << "There is an untracked file in the way; delete it, or add and commit it first.\n\n";
             cout << "Untracked files:\n" << untracked_files << endl;
-            exit(0);
+            return;
+        }
+        string modified_files = "";
+        bool has_unequal = current.check_for_modified(modified_files);
+        if (has_unequal)
+        {
+            cout << "There is a modified file in the way; revert it to its original state, or add and commit it first.\n\n";
+            cout << "Modified files:\n" << modified_files << endl;
+            return;
         }
 
         // get given commit
@@ -332,56 +330,137 @@ void Repository::checkout(string branch)
 
 void Repository::reset(string commit_id)
 {
-    // If no commit with the given id exists, print No commit with that id exists. 
-    // If a working file is untracked in the current branch and would be overwritten by the reset, 
-        // print `There is an untracked file in the way; delete it, or add and commit it first.`
-        // and exit; perform this check before doing anything else.
-    // Checks out all the files tracked by the given commit. 
-    // Removes tracked files that are not present in that commit. 
-    // Also moves the current branch’s head to that commit node. 
-    // See the intro for an example of what happens to the head pointer after using reset. 
-    // The [commit id] may be abbreviated as for checkout. 
-    // The staging area is cleared. 
-    // The command is essentially checkout of an arbitrary commit that also changes the current branch head.
+    // failure checks
+    Commit c;
+    fs::path current_commit_path;
+    Commit current = get_current_commit(current_commit_path);
+    if (!retrieve_commit(commit_id, c)) 
+    {
+        cout << "No commit with that id exists." << endl;
+        return;
+    }
+    string untracked_files = "";
+    bool has_untracked = current.check_for_untracked(untracked_files);
+    if (has_untracked)
+    {
+        cout << "There is an untracked file in the way; delete it, or add and commit it first.\n\n";
+        cout << "Untracked files:\n" << untracked_files << endl;
+        return;
+    }
+    string modified_files = "";
+    bool has_unequal = current.check_for_modified(modified_files);
+    if (has_unequal)
+    {
+        cout << "There is a modified file in the way; revert it to its original state, or add and commit it first.\n\n";
+        cout << "Modified files:\n" << modified_files << endl;
+        return;
+    }
+    if (!fs::is_empty(ADD_STAGE_DIR) || !fs::is_empty(RM_STAGE_DIR)) 
+    {
+        cout << "There is a staged file in the way; unstage and delete it, or commit it first." << endl;
+        return;
+    }
+
+    // checkout all files in given commit and remove tracked files that are not present in that commit.
+    c.checkout();
+
+    // get branch of commit
+    string branch = c.get_branch();
+    // change current branch to branch 
+    store_in_file(branch, CURRENT_BRANCH_PATH);
+    // change head to be latest commit of given branch
+    fs::path subfolder = COMMITS_DIR / branch / commit_id.substr(0, 2);
+    fs::path head_commit_path = subfolder / commit_id.substr(2, commit_id.length() - 2);
+    store_in_file(head_commit_path, HEAD_PATH);
 }
 
 void Repository::status()
 {
-    // === Branches ===
-    // *master
-    // other-branch
-    
-    // === Staged Files ===
-    // wug.txt
-    // wug2.txt
-    
-    // === Removed Files ===
-    // goodbye.txt
-    
-    // LATER ON
-    // === Modifications Not Staged For Commit ===
-    // junk.txt (deleted)
-    // wug3.txt (modified)
-    // SEE SPEC
-    
-    // === Untracked Files ===
-    // random.stuff
+    cout << "=== Branches ===" << endl;
+    string current_branch = get_current_branch();
+    for(auto& p: fs::directory_iterator(BRANCHES_DIR))
+    {
+        if (p.path().filename().string() == current_branch) cout << "*";
+        cout << p.path().filename().string() << '\n';
+    }
+    cout << endl;
 
-    // Entries should be listed in lexicographic order, using the Java string-comparison order (the asterisk doesn’t count)
+    cout << "=== Staged Files ===" << endl;
+    for(auto& p: fs::directory_iterator(ADD_STAGE_DIR))
+        cout << p.path().filename().string() << '\n';
+    cout << endl;
+
+    cout << "=== Removed Files ===" << endl;
+    for(auto& p: fs::directory_iterator(RM_STAGE_DIR))
+        cout << p.path().filename().string() << '\n';
+    cout << endl;
+    
+    cout << "=== Modifications Not Staged For Commit ===" << endl;
+    fs::path current_commit_path;
+    string modified_files;
+    Commit current = get_current_commit(current_commit_path);
+    current.check_for_unstaged_modified(modified_files);
+    cout << modified_files << endl;
+
+    cout << "=== Untracked Files ===" << endl;
+    string untracked_files;
+    current.check_for_untracked(untracked_files);
+    cout << untracked_files << endl;
 }
 
+// Merges files from the given branch into the current branch
 void Repository::merge(string branch_name)
 {
-    // see spec
+    // find split point commit
+    Commit split = get_split_point(branch_name);
+    cout << "SPLIT POINT:" << endl;
+    cout << split << endl;
+
+    // If the split point is the same commit as the given branch, then we do nothing; 
+        // the merge is complete, and the operation ends with the message Given branch is an ancestor of the current branch. 
+    // If the split point is the current branch, then the effect is to 
+        // check out the given branch, 
+        // and the operation ends after printing the message Current branch fast-forwarded.
+
+    // else
+
+    // Any files that have been modified in the given branch since the split point, 
+    // but not modified in the current branch since the split point should be  
+        // To clarify, if a file is “modified in the given branch since the split point” 
+        // this means the version of the file as it exists in the commit at the front of 
+        // the given branch has different content from the version of the file at the split point. Remember: blobs are content addressable!
+        
+        // changed to their versions in the given branch (checked out from the commit at the front of the given branch). 
+        // These files should then all be automatically staged. 
+    
+}
+
+Commit Repository::get_split_point(string branch_name)
+{
+    // get current commit
+    fs::path current_path;
+    Commit current = get_current_commit(current_path);
+    // get head commit of given branch
+    fs::path branch_path;
+    Commit branch;
+    retrieve(BRANCHES_DIR / branch_name, branch_path);
+    retrieve(branch_path, branch);
+
+    // while current and branch are not the same commit
+    while (current != branch)
+    {
+        // set latest commit to parent 
+        if (current < branch) branch = branch.get_parent();
+        else current = current.get_parent();
+    }
+
+    return current;
 }
 
 // PURPOSE: return if file is equal to file in current commit
 bool Repository::in_commit(fs::path file)
 {
     fs::path abs_path = CWD / file;
-    // get hash of current file
-    string h1 = get_hash(abs_path);
-    // get commit
     fs::path commit_path;
     Commit commit = get_current_commit(commit_path);
     return commit.matches(file);
@@ -396,19 +475,10 @@ Commit Repository::get_current_commit(fs::path& commit_path)
     return current;
 }
 
-// PURPOSE: get current branch
-string Repository::get_current_branch()
-{
-    string branch;
-    retrieve(CURRENT_BRANCH_PATH, branch);
-    return branch;
-}
-
 // PURPOSE: retrieve commit with id, return true if commit exists
 // PREREQ: commit must exist
 bool Repository::retrieve_commit(string uid, Commit& c)
 {
-    cout << "Retrieving commit " << uid << endl;
     string branch = get_current_branch();
     fs::path subfolder = COMMITS_DIR / branch / uid.substr(0, 2);
     fs::path file_path = subfolder / uid.substr(2, uid.length() - 2);

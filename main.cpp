@@ -73,34 +73,23 @@ int main(int argc, char *argv[])
             cout << "Invalid argument." << endl;
         }
     }
-
-
-
-    else if (strcmp(argv[1], "status") == 0)
-    {
-        cout << "Running status." << endl;
-    }
-    
     else if (strcmp(argv[1], "reset") == 0)
     {
-        cout << "Running status." << endl;
+        if (argc != 3) cout << "Please enter a commit id to reset to.\n";
+        else repo.reset(argv[2]);
+    }
+    else if (strcmp(argv[1], "status") == 0)
+    {
+        repo.status();
     }
     else if (strcmp(argv[1], "merge") == 0)
     {
-        cout << "Running status." << endl;
+        if (argc != 3) cout << "Please enter a branch to merge.\n";
+        else repo.merge(argv[2]);
     }
     else
     {
         cout << "Invalid argument." << endl;
     }
-    std::exit(0);
-    
-    // checkout(string file){}
-    // checkout(string branch){}
-    // checkout(string commit_id, string file){}
-    // rm_branch(string name){}
-    // reset(string commit_id){}
-    // merge(string branch_name){}
-
     return 0;
 }
